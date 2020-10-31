@@ -817,59 +817,11 @@ function _omz::theme::use {
 }
 
 function _omz::update {
-  # Check if git command is available
-  (( $+commands[git] )) || {
-    _omz::log error "git is not installed. Aborting..."
-    return 1
-  }
-
-  local last_commit=$(builtin cd -q "$ZSH"; git rev-parse HEAD 2>/dev/null)
-  [[ $? -eq 0 ]] || {
-    _omz::log error "\`$ZSH\` is not a git directory. Aborting..."
-    return 1
-  }
-
-  # Run update script
-  zstyle -s ':omz:update' verbose verbose_mode || verbose_mode=default
-  if [[ "$1" != --unattended ]]; then
-    ZSH="$ZSH" command zsh -f "$ZSH/tools/upgrade.sh" -i -v $verbose_mode || return $?
-  else
-    ZSH="$ZSH" command zsh -f "$ZSH/tools/upgrade.sh" -v $verbose_mode || return $?
-  fi
-
-  # Update last updated file
-  zmodload zsh/datetime
-  echo "LAST_EPOCH=$(( EPOCHSECONDS / 60 / 60 / 24 ))" >! "${ZSH_CACHE_DIR}/.zsh-update"
-  # Remove update lock if it exists
-  command rm -rf "$ZSH/log/update.lock"
-
-  # Restart the zsh session if there were changes
-  if [[ "$1" != --unattended && "$(builtin cd -q "$ZSH"; git rev-parse HEAD)" != "$last_commit" ]]; then
-    # Old zsh versions don't have ZSH_ARGZERO
-    local zsh="${ZSH_ARGZERO:-${functrace[-1]%:*}}"
-    # Check whether to run a login shell
-    [[ "$zsh" = -* || -o login ]] && exec -l "${zsh#-}" || exec "$zsh"
-  fi
-}
-
-function _omz::version {
-  (
-    builtin cd -q "$ZSH"
-
-    # Get the version name:
-    # 1) try tag-like version
-    # 2) try branch name
-    # 3) try name-rev (tag~<rev> or branch~<rev>)
-    local version
-    version=$(command git describe --tags HEAD 2>/dev/null) \
-    || version=$(command git symbolic-ref --quiet --short HEAD 2>/dev/null) \
-    || version=$(command git name-rev --no-undefined --name-only --exclude="remotes/*" HEAD 2>/dev/null) \
-    || version="<detached>"
-
-    # Get short hash for the current HEAD
-    local commit=$(command git rev-parse --short HEAD 2>/dev/null)
-
-    # Show version and commit hash
-    printf "%s (%s)\n" "$version" "$commit"
-  )
+    # Run update script
+    env ZSH="$ZSH" zsh -f "$ZSH/tools/upgrade.sh"
+    # Update last updated file
+    zmodload zsh/datetime
+    echo "LAST_EPOCH=$(( EPOCHSECONDS / 60 / 60 / 24 ))" >! "${ZSH_CACHE_DIR}/.zsh-update"
+    # Remove update lock if it exists
+    command rm -rf "$ZSH/log/update.lock"
 }
