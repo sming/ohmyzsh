@@ -10,3 +10,6 @@ log/
 # editor configs
 .vscode
 .idea
+
+# history from... don't know
+.history/
