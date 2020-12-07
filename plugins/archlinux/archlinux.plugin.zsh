@@ -29,24 +29,29 @@ function paclist() {
 }
 
 function pacdisowned() {
-  local tmp_dir db fs
-  tmp_dir=$(mktemp --directory)
-  db=$tmp_dir/db
-  fs=$tmp_dir/fs
+  local tmp db fs
+  tmp=${TMPDIR-/tmp}/pacman-disowned-$UID-$$
+  db=$tmp/db
+  fs=$tmp/fs
 
-  trap "rm -rf $tmp_dir" EXIT
+  mkdir "$tmp"
+  trap 'rm -rf "$tmp"' EXIT
 
-  pacman -Qlq | sort -u > "$db"
+  pacman -Qlq | sort -u >"$db"
 
   find /etc /usr ! -name lost+found \
-    \( -type d -printf '%p/\n' -o -print \) | sort > "$fs"
+    \( -type d -printf '%p/\n' -o -print \) | sort >"$fs"
 
   comm -23 "$fs" "$db"
 
   rm -rf $tmp_dir
 }
 
-alias pacmanallkeys='sudo pacman-key --refresh-keys'
+function pacmanallkeys() {
+  curl -s https://www.archlinux.org/people/{developers,trustedusers}/ |
+    awk -F\" '(/pgp.mit.edu/) { sub(/.*search=0x/,""); print $1}' |
+    xargs sudo pacman-key --recv-keys
+}
 
 function pacmansignkeys() {
   local key
@@ -58,24 +63,15 @@ function pacmansignkeys() {
   done
 }
 
-if (( $+commands[xdg-open] )); then
+if (($ + commands[xdg - open])); then
   function pacweb() {
-    if [[ $# = 0 || "$1" =~ '--help|-h' ]]; then
-      local underline_color="\e[${color[underline]}m"
-      echo "$0 - open the website of an ArchLinux package"
-      echo
-      echo "Usage:"
-      echo "    $bold_color$0$reset_color ${underline_color}target${reset_color}"
-      return 1
-    fi
-
     local pkg="$1"
     local infos="$(LANG=C pacman -Si "$pkg")"
     if [[ -z "$infos" ]]; then
       return
     fi
-    local repo="$(grep -m 1 '^Repo' <<< "$infos" | grep -oP '[^ ]+$')"
-    local arch="$(grep -m 1 '^Arch' <<< "$infos" | grep -oP '[^ ]+$')"
+    local repo="$(grep -m 1 '^Repo' <<<"$infos" | grep -oP '[^ ]+$')"
+    local arch="$(grep -m 1 '^Arch' <<<"$infos" | grep -oP '[^ ]+$')"
     xdg-open "https://www.archlinux.org/packages/$repo/$arch/$pkg/" &>/dev/null
   }
 fi
@@ -84,7 +80,7 @@ fi
 #             AUR helpers             #
 #######################################
 
-if (( $+commands[aura] )); then
+if (($ + commands[aura])); then
   alias auin='sudo aura -S'
   alias aurin='sudo aura -A'
   alias auclean='sudo aura -Sc'
@@ -110,11 +106,11 @@ if (( $+commands[aura] )); then
   # extra bonus specially for aura
   alias auown="aura -Qqo"
   alias auls="aura -Qql"
-  function auownloc() { aura -Qi  $(aura -Qqo $@); }
-  function auownls () { aura -Qql $(aura -Qqo $@); }
+  function auownloc() { aura -Qi $(aura -Qqo $@); }
+  function auownls() { aura -Qql $(aura -Qqo $@); }
 fi
 
-if (( $+commands[pacaur] )); then
+if (($ + commands[pacaur])); then
   alias pacclean='pacaur -Sc'
   alias pacclr='pacaur -Scc'
   alias paupg='pacaur -Syu'
@@ -134,7 +130,7 @@ if (( $+commands[pacaur] )); then
   alias paupd="pacaur -Sy"
 fi
 
-if (( $+commands[trizen] )); then
+if (($ + commands[trizen])); then
   alias trconf='trizen -C'
   alias trupg='trizen -Syua'
   alias trsu='trizen -Syua --noconfirm'
@@ -155,7 +151,7 @@ if (( $+commands[trizen] )); then
   alias trupd="trizen -Sy"
 fi
 
-if (( $+commands[yay] )); then
+if (($ + commands[yay])); then
   alias yaconf='yay -Pg'
   alias yaclean='yay -Sc'
   alias yaclr='yay -Scc'
@@ -189,13 +185,13 @@ function upgrade() {
     echo " Arch Linux PGP Keyring is up to date."
     echo " Proceeding with full system upgrade."
   fi
-  if (( $+commands[yay] )); then
+  if (($ + commands[yay])); then
     yay -Syu
-  elif (( $+commands[trizen] )); then
+  elif (($ + commands[trizen])); then
     trizen -Syu
-  elif (( $+commands[pacaur] )); then
+  elif (($ + commands[pacaur])); then
     pacaur -Syu
-  elif (( $+commands[aura] )); then
+  elif (($ + commands[aura])); then
     sudo aura -Syu
   else
     sudo pacman -Syu
