@@ -11,4 +11,5 @@ plugins/kubectx/                    @mcornella
 plugins/opentofu/                   @mcornella
 plugins/react-native                @esthor
 plugins/sdk/                        @rgoldberg
+plugins/universalarchive/           @Konfekt
 plugins/wp-cli/                     @joshmedeski
