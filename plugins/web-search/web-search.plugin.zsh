@@ -34,6 +34,7 @@ function web_search() {
     chatgpt         "https://chatgpt.com/?q="
     reddit          "https://www.reddit.com/search/?q="
     ppai            "https://www.perplexity.ai/search/new?q="
+    amazon          "https://www.amazon.com/s/s?k="
   )
 
   # check whether the search engine is supported
@@ -61,7 +62,7 @@ function web_search() {
   open_command "$url"
 }
 
-
+alias amazon="web_search amazon"
 alias bing='web_search bing'
 alias brs='web_search brave'
 alias google='web_search google'

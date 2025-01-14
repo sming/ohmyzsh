@@ -388,6 +388,13 @@ function zshrc() {
   popd
 }
 
+
+function what-is-my-ip() {
+  echo "Local IP: " $(ifconfig en0 | awk -v OFS="\n" '{ print $1 " " $2, $NF }' | grep "inet 192")
+  echo "iNet IP : " $(dig @resolver4.opendns.com myip.opendns.com +short)
+  echo "Hostname: " `hostname`
+}
+
 function dir-sizes() {
   du -sh ./* | sort -h
 }
@@ -427,23 +434,9 @@ function find-gig-files() {
   find . -size +1G -ls | sort -k7n # Find files larger than 1GB and then order the list by the file size
 }
 
-function _start-cloud-storage() {
-    bgnotify "Booting cloud sync apps..."
-    cd /Applications
-    open Dropbox.app 2>/dev/null &
-    open Google\ Drive.app 2>/dev/null &
-    # Don't do this cos it downloads my backed up photos
-    # open "Google Drive File Stream.app" 2>/dev/null &
-    cd -
-}
-
-function start-cloud-storage() {
-  (
-    bgnotify "Waiting for local unison sync..."
-    /Users/peter/dotfiles_psk/bin/unison-cron-job.sh
-    sleep 7
-    _start-cloud-storage
-  ) &
+function start-cloud-sync() {
+  echo "Starting cloud sync..."
+  ${HOME}/bin/run-rclone-bisync-dropbox-gdrive.sh &
 }
 
 function tree() {
@@ -466,31 +459,61 @@ function _open-all-chrome-apps() {
 }
 
 function open-all-chrome-apps() {
-  CHROME_APP_DIR='/Users/peter/Dropbox (Personal)/_Settings/Chrome Apps/Chrome Apps.localized/'
-  _open-all-chrome-apps "$CHROME_APP_DIR"
-  CHROME_APP_DIR='/Users/peter/Dropbox (Personal)/_Settings/Chrome/Chrome Apps/Chrome Apps.localized/'
-  _open-all-chrome-apps "$CHROME_APP_DIR"
+  /Users/peter/.oh-my-zsh/bin/launch-browser-apps.sh & 2>&1 > /dev/null
 }
 
 alias start-all-edge-apps="open-all-edge-apps"
 
 function kill-cloud-storage() {
-    # TODO investigate pkill as alternative
+  ─╯
+  # TODO investigate pkill as alternative
 
-    # Don't do this cos it downloads my backed up photos
-    # killall "Google Drive File Stream" 2>/dev/null &
-    killall Dropbox 2>/dev/null &
-    killall "Google Drive" 2>/dev/null &
-    killall -v "FinderSyncExtension" -SIGKILL &
+  # Don't do this cos it downloads my backed up photos
+  # killall "Google Drive File Stream" 2>/dev/null &
+  killall -q Dropbox
+  killall -q "Google Drive"
+  killall -q "FinderSyncExtension" -SIGKILL
 }
 
-# For photos, pictures, DS718
-function organise-into-dated-dirs() {
-  if [ $# -eq 0 ]
-  then
-    echo "Please supply an extension e.g. mov or mp4"
-    return
-  fi
+function mdfind() {
+    /usr/bin/mdfind $@ 2> >(grep --invert-match ' \[UserQueryParser\] ' >&2)
+}
+
+function mdfind-current-dir() { # find file in .
+  mdfind -onlyin . -name $1
+}
+
+function mdfind-home-dir() { # mdfind file in $HOME
+  mdfind -onlyin $HOME -name $1
+}
+
+function mdfind-grep-current-dir() { # mdfind grep in current dir
+  mdfind -onlyin . $1
+}
+
+function mdfind-grep-home-dir() { # mdfind grep in $HOME
+  mdfind -onlyin $HOME $1
+}
+
+
+function google-search() {
+  s $1 -p google
+}
+
+function amazon-search() {
+  s $1 -p amazon
+}
+
+function youtube-search() {
+  s $1 -p youtube
+}
+
+function explain-command {
+    command="https://explainshell.com/explain?cmd=${1}"
+osascript <<EOD
+tell application "Safari" to make new document with properties {URL:"$command"}
+return
+EOD
 
   for x in *.${1}; do
     d=$(date -r "$x" +%Y-%m-%d)
@@ -557,4 +580,146 @@ bindkey '^Xf' peco-directories
 zle -N peco-files
 bindkey '^X^f' peco-files
 
-### peco functions ###
+###########################
+# Percol https://github.com/mooz/percol
+###########################
+function ppgrep() {
+    if [[ $1 == "" ]]; then
+        PERCOL=percol
+    else
+        PERCOL="percol --query $1"
+    fi
+    ps aux | eval $PERCOL | awk '{ print $2 }'
+}
+
+function ppkill() {
+    if [[ $1 =~ "^-" ]]; then
+        QUERY=""            # options only
+    else
+        QUERY=$1            # with a query
+        [[ $# > 0 ]] && shift
+    fi
+    ppgrep $QUERY | xargs kill $*
+}
+
+function smileys() {
+  printf "$(awk 'BEGIN{c=127;while(c++<191){printf("\xf0\x9f\x98\\%s",sprintf("%o",c));}}')"
+}
+
+function clone-starred-repos() {
+  GITUSER=sming; curl "https://api.github.com/users/${GITUSER}/starred?per_page=1000" | grep -o 'git@[^"]*' | parallel -j 25 'git clone {}'
+}
+
+function print-path() {
+  echo "$PATH" | tr ':' '\n'
+}
+
+alias pretty-print-path="print-path"
+alias dump-path="print-path"
+alias path-dump="print-path"
+
+function envgr() {
+  env | grep -Ei "$@" | sort
+}
+
+alias interactive-ps-grep="ppgrep"
+alias grep-ps-percol="ppgrep"
+alias grep-ps-interactive="ppgrep"
+alias interactive-kill="ppkill"
+alias kill-interactive="ppkill"
+alias kill-percol="ppkill"
+
+# From https://apple.stackexchange.com/a/432408/100202 - sets the current iterm2
+# tab to a random color
+PRELINE="\r\033[A"
+
+# From https://stackoverflow.com/questions/59090903/is-there-any-way-to-get-iterm2-to-color-each-new-tab-with-a-different-color-usi
+function random {
+    echo -e "\033]6;1;bg;red;brightness;$((1 + $RANDOM % 255))\a"$PRELINE
+    echo -e "\033]6;1;bg;green;brightness;$((1 + $RANDOM % 255))\a"$PRELINE
+    echo -e "\033]6;1;bg;blue;brightness;$((1 + $RANDOM % 255))\a"$PRELINE
+}
+
+function color {
+    case $1 in
+    green)
+    echo -e "\033]6;1;bg;red;brightness;57\a"$PRELINE
+    echo -e "\033]6;1;bg;green;brightness;197\a"$PRELINE
+    echo -e "\033]6;1;bg;blue;brightness;77\a"$PRELINE
+    ;;
+    red)
+    echo -e "\033]6;1;bg;red;brightness;270\a"$PRELINE
+    echo -e "\033]6;1;bg;green;brightness;60\a"$PRELINE
+    echo -e "\033]6;1;bg;blue;brightness;83\a"$PRELINE
+    ;;
+    orange)
+    echo -e "\033]6;1;bg;red;brightness;227\a"$PRELINE
+    echo -e "\033]6;1;bg;green;brightness;143\a"$PRELINE
+    echo -e "\033]6;1;bg;blue;brightness;10\a"$PRELINE
+    ;;
+    *)
+    random
+    esac
+}
+
+function git-diff-repos() {
+  RESULTS="diff-results.patch"
+  echo "" > $RESULTS
+
+  for DIR in */; do
+    pushd $DIR
+    echo "\n———————\nGit diffing $PWD\n———————\n" >> ../$RESULTS
+    git --no-pager diff --ignore-space-change -- ':!*poetry.lock' -- ':^.vscode' . >> ../$RESULTS
+    popd
+  done
+
+  bat $RESULTS
+}
+
+function git-info-repos() {
+  RESULTS="info-results.txt"
+  echo "" > $RESULTS
+
+  for DIR in */; do
+    pushd $DIR
+    echo "\n———————\nGit info-ing $PWD\n———————\n" >> ../$RESULTS
+    git-info 2>&1 >> ../$RESULTS
+    popd
+  done
+
+  bat $RESULTS
+}
+
+function git-merge-develop() {
+  echo "\nChecking out develop..." && gco develop && \
+  echo "\nPulling develop..." && git pull && \
+  echo "\nChecking out -..." && gco - && \
+  echo "\nMerging develop in..." && git merge develop
+}
+
+function scrcpy-s20() {
+  # presumably this once worked but does not now
+  # /opt/homebrew/bin/scrcpy --serial R5CN20MZEKJ
+  /opt/homebrew/bin/scrcpy --no-audio # -sadb-R5CN20MZEKJ-ogJwLS._adb-tls-connect._tcp.
+  if [[ "$?" -ne 0 ]]
+  then
+    echo "first run usually fails, trying a second time..."
+    /opt/homebrew/bin/scrcpy --no-audio
+  fi
+}
+alias run-scrcpy="/Users/peter/.oh-my-zsh/bin/run-scrcpy.sh"
+alias scr=run-scrcpy
+
+
+function dir-with-most-files() {
+  ~/bin/dir-with-most-files.sh "$@"
+}
+
+alias most-files-dir=dir-with-most-files
+alias count-files=dir-with-most-files
+alias biggest-dirs=dir-with-most-files
+
+function check-internet() {
+  ifconfig en0 | awk -v OFS="\n" '{ print $1 " " $2, $NF }' | grep "inet 192"
+
+}
