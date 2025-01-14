@@ -26,6 +26,8 @@ else
         alias grep="grep $GREP_OPTIONS"
         alias egrep="egrep $GREP_OPTIONS"
         alias fgrep="fgrep $GREP_OPTIONS"
+        alias egrep="egrep $GREP_OPTIONS"
+        alias fgrep="fgrep $GREP_OPTIONS"
         # write to cache file if cache directory is writable
         if [[ -w "$ZSH_CACHE_DIR" ]]; then
             alias -L grep egrep fgrep >| "$__GREP_CACHE_FILE"

@@ -110,6 +110,14 @@ function gdb() {
   git diff $1..$2
 }
 
+alias gdi="git diff --cached "
+alias gdc="git diff --cached "
+
+# Params: branch A and branch B to be diffed
+function gdb() {
+  git diff $1..$2
+}
+
 #
 # Get the value of an alias.
 #
