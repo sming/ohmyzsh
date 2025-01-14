@@ -480,32 +480,19 @@ function mdfind() {
 }
 
 function mdfind-current-dir() { # find file in .
-  mdfind -onlyin . -name $1
+  mdfind -onlyin . -name $@
 }
 
 function mdfind-home-dir() { # mdfind file in $HOME
-  mdfind -onlyin $HOME -name $1
+  mdfind -onlyin $HOME -name $@
 }
 
 function mdfind-grep-current-dir() { # mdfind grep in current dir
-  mdfind -onlyin . $1
+  mdfind -onlyin . $@
 }
 
 function mdfind-grep-home-dir() { # mdfind grep in $HOME
-  mdfind -onlyin $HOME $1
-}
-
-
-function google-search() {
-  s $1 -p google
-}
-
-function amazon-search() {
-  s $1 -p amazon
-}
-
-function youtube-search() {
-  s $1 -p youtube
+  mdfind -onlyin $HOME $@
 }
 
 function explain-command {
