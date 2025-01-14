@@ -70,13 +70,30 @@ mkdir -p "$ZSH_CACHE_DIR/completions"
 # Check for updates on initial load...
 source "$ZSH/tools/check_for_upgrade.sh"
 
+# Homebrew mentioned this so I'm doing it
+export SCALA_HOME=/opt/homebrew/opt/scala/idea
+
 # Initializes Oh My Zsh
 
 # add a function path
 fpath=($ZSH/{functions,completions} $ZSH_CUSTOM/{functions,completions} $fpath)
 
 # Load all stock functions (from $fpath files) called below.
-autoload -U compaudit compinit zrecompile
+# Only check daily from https://carlosbecker.com/posts/speeding-up-zsh/
+# autoload -U compinit && compinit -u
+# autoload -U compaudit compinit
+autoload -Uz compinit
+if [ $(date +'%j') != $(stat -f '%Sm' -t '%j' ~/.zcompdump) ]; then
+  compinit
+else
+  compinit -C
+fi
+
+# Set ZSH_CUSTOM to the path where your custom config files
+# and plugins exists, or else we will use the default custom/
+if [[ -z "$ZSH_CUSTOM" ]]; then
+    ZSH_CUSTOM="$ZSH/custom"
+fi
 
 is_plugin() {
   local base_dir=$1

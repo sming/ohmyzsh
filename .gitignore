@@ -10,6 +10,35 @@ log/
 # editor configs
 .vscode
 .idea
+.history/*
 
 # history from... don't know
 .history/
+.bash_profile
+.bashrc
+.config
+.gitconfig
+.hyper.js
+.p10k.zsh
+.profile
+.slate.js
+.zprofile
+.zsh_favlist
+.zshrc
+bin
+functions.zsh
+htoprc
+IntelliJ-Shortcuts.md
+liquidprompt
+liquidpromptrc
+starship.toml
+tasker_give_permissions_adb.sh
+theme_chooser.sh
+themes/agnoster-psk.zsh-theme
+themes/agnoster-short.zsh-theme
+themes/agnoster-shorter.zsh-theme
+themes/example.zsh-theme
+themes/lambda-mod.zsh-theme
+themes/macovsky-ruby.zsh-theme
+unison-cron-job.sh
+znt
