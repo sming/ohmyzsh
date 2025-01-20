@@ -241,8 +241,6 @@ Available commands:
 EOF
     return 1
   }
-    return 1
-  }
 
   local command="$1"
   shift

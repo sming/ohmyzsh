@@ -3,33 +3,16 @@ if [[ -f ~/.zsh-update && ! -f "${ZSH_CACHE_DIR}/.zsh-update" ]]; then
   mv ~/.zsh-update "${ZSH_CACHE_DIR}/.zsh-update"
 fi
 
-# Get user's update preferences
-#
-# Supported update modes:
-# - prompt (default): the user is asked before updating when it's time to update
-# - auto: the update is performed automatically when it's time
-# - reminder: a reminder is shown to the user when it's time to update
-# - background-alpha: an experimental update-on-the-background option
-# - disabled: automatic update is turned off
-zstyle -s ':omz:update' mode update_mode || {
-  update_mode=prompt
-
-  # If the mode zstyle setting is not set, support old-style settings
-  [[ "$DISABLE_UPDATE_PROMPT" != true ]] || update_mode=auto
-  [[ "$DISABLE_AUTO_UPDATE" != true ]] || update_mode=disabled
-}
-
 # Cancel update if:
-# - the automatic update is disabled
-# - the current user doesn't have write permissions nor owns the $ZSH directory
-# - is not run from a tty
-# - git is unavailable on the system
-# - $ZSH is not a git repository
-if [[ "$update_mode" = disabled ]] \
+# - the automatic update is disabled.
+# - the current user doesn't have write permissions nor owns the $ZSH directory.
+# - git is unavailable on the system.
+if [[ "$DISABLE_AUTO_UPDATE" = true ]] \
    || [[ ! -w "$ZSH" || ! -O "$ZSH" ]] \
    || ! command -v git &>/dev/null; then
   return
 fi
+
 
 function current_epoch() {
   zmodload zsh/datetime
@@ -41,9 +24,8 @@ function update_last_updated_file() {
 }
 
 function update_ohmyzsh() {
-  if ZSH="$ZSH" zsh -f "$ZSH/tools/upgrade.sh" --interactive; then
-    update_last_updated_file
-  fi
+  ZSH="$ZSH" zsh -f "$ZSH/tools/upgrade.sh"
+  update_last_updated_file
 }
 
 () {

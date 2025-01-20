@@ -317,15 +317,12 @@ function omz_urldecode {
 ##################################
 # PSK Functions
 ##################################
-# PSK List directories only
-lsd() {
-    l | grep -E "^d"
-}
 
 # ls grep
-lsg() {
+function lsg() {
     l | grep -iE "$1"
 }
+alias lsgr=lsg
 
 # the ol' gfind. Doesn't take a file pattern.
 function gfind-all() {
